@@ -9,26 +9,27 @@ ctxr_tools only needs:
 All other format-specific plugins (TIFF, JPEG2000, WebP, PDF, BMP encoders,
 ICO, PCX, PPM, SGI, SUN, TGA, XBM, ...) are excluded to reduce bundle size.
 """
-from PyInstaller.utils.hooks import collect_submodules, filter_submodules
+
+from PyInstaller.utils.hooks import collect_submodules
 
 # Start with everything PIL has
-all_modules = collect_submodules('PIL')
+all_modules = collect_submodules("PIL")
 
 # Plugins we actually use
 keep = {
-    'PIL.Image',
-    'PIL.ImageTk',
-    'PIL.ImageDraw',
-    'PIL.ImageFile',
-    'PIL.ImageMode',
-    'PIL.ImagePalette',
-    'PIL.ImageColor',
-    'PIL.PngImagePlugin',   # needed for PNG export in preview window
-    'PIL.PpmImagePlugin',   # PIL internal dependency
-    'PIL._imaging',         # C extension — core
-    'PIL._imagingft',       # freetype (text rendering)
-    'PIL._imagingcms',      # colour management (PIL dependency)
-    'PIL._webp',            # sometimes required by PIL core
+    "PIL.Image",
+    "PIL.ImageTk",
+    "PIL.ImageDraw",
+    "PIL.ImageFile",
+    "PIL.ImageMode",
+    "PIL.ImagePalette",
+    "PIL.ImageColor",
+    "PIL.PngImagePlugin",  # needed for PNG export in preview window
+    "PIL.PpmImagePlugin",  # PIL internal dependency
+    "PIL._imaging",  # C extension — core
+    "PIL._imagingft",  # freetype (text rendering)
+    "PIL._imagingcms",  # colour management (PIL dependency)
+    "PIL._webp",  # sometimes required by PIL core
 }
 
 # Only include what we need
