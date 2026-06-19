@@ -6,7 +6,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
   workflow_dispatch:
 
 jobs:
@@ -23,8 +23,7 @@ jobs:
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'              # cache pip downloads between runs
+          python-version: "3.11"
 
       # ── 3. Dependencies ──────────────────────────────────────────────────────
       - name: Install Python dependencies
@@ -37,7 +36,7 @@ jobs:
       #    winget is pre-installed on windows-latest runners.
       - name: Install UPX
         run: winget install --id upx.upx --silent --accept-package-agreements --accept-source-agreements
-        continue-on-error: true    # build still works without UPX, just larger
+        continue-on-error: true # build still works without UPX, just larger
 
       # ── 5. Tests ─────────────────────────────────────────────────────────────
       - name: Run tests
