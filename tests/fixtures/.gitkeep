@@ -1,0 +1,3 @@
+This folder holds optional local test fixtures (sample.ctxr / sample.dds).
+They are not committed to the repository — see tests/test_converter.py
+for instructions on how to add your own for local testing.

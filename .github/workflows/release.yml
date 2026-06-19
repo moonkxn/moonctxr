@@ -1,0 +1,110 @@
+name: Build and Release
+
+# Triggers:
+#   Push a tag like v1.0.0  →  builds .exe + creates a GitHub Release
+#   Manual trigger          →  builds .exe only (no release created)
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build Windows .exe
+    runs-on: windows-latest
+
+    steps:
+      # ── 1. Checkout ─────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Python ───────────────────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'              # cache pip downloads between runs
+
+      # ── 3. Dependencies ──────────────────────────────────────────────────────
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller pillow pytest
+
+      # ── 4. Install UPX ──────────────────────────────────────────────────────
+      #    UPX compresses the final .exe by ~40-50%.
+      #    winget is pre-installed on windows-latest runners.
+      - name: Install UPX
+        run: winget install --id upx.upx --silent --accept-package-agreements --accept-source-agreements
+        continue-on-error: true    # build still works without UPX, just larger
+
+      # ── 5. Tests ─────────────────────────────────────────────────────────────
+      - name: Run tests
+        run: python -m pytest tests/ -v
+
+      # ── 6. Build .exe ────────────────────────────────────────────────────────
+      - name: Build with PyInstaller
+        run: pyinstaller ctxr_tools.spec --clean --noconfirm
+
+      # ── 7. Print size ────────────────────────────────────────────────────────
+      - name: Report binary size
+        shell: pwsh
+        run: |
+          $f = Get-Item "dist\ctxr_tools.exe"
+          $mb = [math]::Round($f.Length / 1MB, 1)
+          echo "Binary size: ${mb} MB"
+          echo "BINARY_SIZE=${mb} MB" >> $env:GITHUB_ENV
+
+      # ── 8. Rename with version tag ───────────────────────────────────────────
+      - name: Rename artifact
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ($tag -eq "") { $tag = "dev" }
+          Rename-Item "dist\ctxr_tools.exe" "dist\ctxr_tools-${tag}.exe"
+          echo "EXE_NAME=ctxr_tools-${tag}.exe" >> $env:GITHUB_ENV
+
+      # ── 9. Upload workflow artifact (always, for inspection) ─────────────────
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EXE_NAME }}
+          path: dist/${{ env.EXE_NAME }}
+          retention-days: 30
+
+      # ── 10. Create GitHub Release (tag pushes only) ──────────────────────────
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: dist/${{ env.EXE_NAME }}
+          body: |
+            ## CTXR ↔ DDS Converter ${{ github.ref_name }}
+
+            ### Download
+            **[ctxr_tools-${{ github.ref_name }}.exe]** — double-click to run, no Python needed.
+
+            Binary size: ${{ env.BINARY_SIZE }}
+
+            ### What's included
+            - CTXR → DDS and DDS → CTXR conversion
+            - Batch conversion with sortable file list
+            - Texture viewer (Preview image) with mip selector, RGBA channel toggles, zoom, PNG export
+            - Pillow bundled — image preview works out of the box
+
+            ### Requirements
+            - Windows 10 or later (64-bit)
+
+            ### Supported formats
+            Uncompressed RGBA8 — Shadow of the Colossus PS3, ICO PS3, MGS HD Collection
+
+            ### Running from source
+            ```
+            pip install pillow
+            python main.py
+            ```
