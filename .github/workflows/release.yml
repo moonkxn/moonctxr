@@ -61,8 +61,14 @@ jobs:
         run: |
           $tag = "${{ github.ref_name }}"
           if ($tag -eq "") { $tag = "dev" }
-          Rename-Item "dist\ctxr_tools.exe" "dist\ctxr_tools-${tag}.exe"
-          echo "EXE_NAME=ctxr_tools-${tag}.exe" >> $env:GITHUB_ENV
+          $newName = "ctxr_tools-$tag.exe"
+          if (-not (Test-Path "dist\ctxr_tools.exe")) {
+            Write-Error "dist\ctxr_tools.exe not found. Listing dist\ contents:"
+            Get-ChildItem dist -Recurse
+            exit 1
+          }
+          Rename-Item -Path "dist\ctxr_tools.exe" -NewName $newName
+          echo "EXE_NAME=$newName" >> $env:GITHUB_ENV
 
       # ── 9. Upload workflow artifact (always, for inspection) ─────────────────
       - name: Upload artifact
